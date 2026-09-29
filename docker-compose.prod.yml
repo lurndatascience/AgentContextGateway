@@ -1,0 +1,10 @@
+# Production overlay: joins the droplet's shared edge network so the edge Caddy can reach the gateway.
+services:
+  gateway:
+    networks:
+      - default
+      - edge_default
+
+networks:
+  edge_default:
+    external: true

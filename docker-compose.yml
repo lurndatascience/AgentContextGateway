@@ -1,0 +1,11 @@
+# The gateway reads its database from .env (the managed Postgres in production).
+# For a local database add the overlay: docker compose -f docker-compose.yml -f docker-compose.local.yml up
+services:
+  gateway:
+    build:
+      context: .
+      dockerfile: gateway/Dockerfile
+    container_name: contextgateway-gateway
+    env_file: .env
+    ports:
+      - "127.0.0.1:8002:8000"

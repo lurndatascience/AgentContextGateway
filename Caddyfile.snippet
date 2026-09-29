@@ -1,0 +1,5 @@
+# Installed by scripts/deploy.sh as /opt/edge/snippets/contextgateway.caddy and imported by the edge Caddy.
+contextgateway.vaibhavkadam.online {
+	encode gzip
+	reverse_proxy contextgateway-gateway:8000
+}
