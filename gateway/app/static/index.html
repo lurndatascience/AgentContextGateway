@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>Agent Context Gateway</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+  body{font:15px/1.5 system-ui,sans-serif;max-width:1000px;margin:32px auto;padding:0 16px;color:#1b1b1b;background:#fafafa}
+  textarea{width:100%;box-sizing:border-box;padding:10px;font:inherit;border:1px solid #bbb;border-radius:6px}
+  button{margin-top:10px;padding:10px 22px;font:inherit;border:0;border-radius:6px;background:#e20074;color:#fff;cursor:pointer}
+  h2{margin:28px 0 4px;font-size:18px}.sub{color:#666;font-size:13px;margin:0 0 8px}
+  .item{border:1px solid #ddd;border-radius:8px;padding:12px;margin:10px 0;background:#fff}
+  .item h3{margin:0 0 6px;font-size:15px}.tag{display:inline-block;padding:1px 8px;border-radius:10px;background:#eee;font-size:12px;margin-right:6px}
+  .why{color:#555;font-size:13px}.warn{border-left:4px solid #e2a000;background:#fff8e6;padding:8px 12px;margin:8px 0}
+  pre{white-space:pre-wrap;font-size:13px;background:#f3f3f3;padding:8px;border-radius:6px}
+  .fresh{background:#dff5e1}.aging{background:#fff3cd}.stale{background:#f8d7da}.unknown{background:#e2e3e5}
+  .private{background:#fde2e2}.internal{background:#fff3cd}.public{background:#dff5e1}
+</style></head><body>
+<h1>Agent Context Gateway</h1>
+<p>Type a task. The gateway answers it three times, once per access level, so you can see what each level is allowed to receive. Dates are judged as of 1 July 2024, the corpus's present.</p>
+<textarea id="task" rows="2">What are the preliminary Q1 2026 results, net revenue and adjusted EBITDA?</textarea>
+<button id="run" onclick="run()">Run</button>
+<div id="out"></div>
+<script>
+const LEVELS=[["public","Public agent","press releases, records, financial facts"],["internal","Internal agent","adds internal team messages"],["finance","Finance agent","adds private messages"]];
+const AS_OF="2024-07-01T00:00:00";
+async function run(){
+  const task=document.getElementById('task').value, btn=document.getElementById('run');
+  btn.disabled=true; btn.textContent="Running…";
+  out.innerHTML=LEVELS.map(([id,name,desc])=>`<h2>${name}</h2><p class="sub">${desc}</p><div id="lvl-${id}">loading…</div>`).join('');
+  await Promise.all(LEVELS.map(async ([id])=>{
+    const r=await fetch('/context',{method:'POST',headers:{'content-type':'application/json','x-demo-level':id},body:JSON.stringify({task,as_of:AS_OF})});
+    const data=await r.json();
+    document.getElementById('lvl-'+id).innerHTML=r.ok?render(data):`<div class="warn">${r.status}: ${esc(data.detail||JSON.stringify(data))}</div>`;
+  }));
+  btn.disabled=false; btn.textContent="Run";
+}
+function render(p){
+  let h=`<p class="sub">${p.items.length} items, ${p.tokens_used}/${p.budget_tokens} tokens, ${p.candidates_considered} candidates considered</p>`;
+  for(const w of p.warnings) h+=`<div class="warn"><b>${w.kind}</b> ${w.refs.join(' ')} ${esc(w.message)}<br><i>${esc(w.resolution||'')}</i></div>`;
+  for(const it of p.items){
+    h+=`<div class="item"><h3>${it.ref} ${esc(it.title)}</h3><span class="tag">${it.kind}</span><span class="tag ${it.freshness}">${it.freshness}</span><span class="tag ${it.evidence[0].scope}">${it.evidence[0].scope}</span>`;
+    h+=`<pre>${esc(it.content)}</pre><div class="why"><b>Why included:</b><ul>${it.why.map(w=>`<li>${esc(w)}</li>`).join('')}</ul>`;
+    h+=`<b>Evidence:</b><ul>${it.evidence.map(e=>`<li>${e.source_ref} · scope ${e.scope} · confidence ${e.confidence} · observed ${e.observed_at?e.observed_at.slice(0,10):'unknown'} (${e.timestamp_precision})</li>`).join('')}</ul></div></div>`;
+  }
+  return h;
+}
+const esc=s=>String(s).replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+</script></body></html>
