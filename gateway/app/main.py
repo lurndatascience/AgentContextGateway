@@ -49,21 +49,14 @@ def context(req: ContextRequest, p: Principal = Depends(principal), db: Session 
     return resolve(db, req, p)
 
 
-def run_agent(agent, db: Session, body: AgentBody, p: Principal) -> dict:
-    try:
-        return agent(db, body.text, p, body.as_of)
-    except RuntimeError as exc:                 # agents are disabled without an OpenAI key
-        raise HTTPException(503, str(exc))
-
-
 @app.post("/agents/answer")
 def agent_answer(body: AgentBody, p: Principal = Depends(principal), db: Session = Depends(get_db)):
-    return run_agent(agents.answer, db, body, p)
+    return agents.answer(db, body.text, p, body.as_of)
 
 
 @app.post("/agents/brief")
 def agent_brief(body: AgentBody, p: Principal = Depends(principal), db: Session = Depends(get_db)):
-    return run_agent(agents.brief, db, body, p)
+    return agents.brief(db, body.text, p, body.as_of)
 
 
 @app.get("/")

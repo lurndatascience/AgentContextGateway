@@ -197,8 +197,8 @@ def run_agents(report: list[str], results: dict) -> None:
             results["agents"].append({"agent": kind, "skipped": res.get("detail")})
             continue
         cov = citation_coverage(res["output"], {it["ref"] for it in res["package"]["items"]})
-        results["agents"].append({"agent": kind, "citation_coverage": cov})
-        report += [f"### {kind}: *{text}*", "", f"Sentence citation coverage: **{cov:.0%}** ({dt * 1000:.0f} ms)", "", "```", res["output"], "```", "",
+        results["agents"].append({"agent": kind, "citation_coverage": cov, "mode": res.get("mode")})
+        report += [f"### {kind}: *{text}*", "", f"Mode: {res.get('mode')}. Sentence citation coverage: **{cov:.0%}** ({dt * 1000:.0f} ms)", "", "```", res["output"], "```", "",
                    "Package handed to the agent:", "", render(res["package"]), ""]
 
 
